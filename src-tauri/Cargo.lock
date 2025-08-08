@@ -5309,6 +5309,7 @@ version = "1.0.2"
 dependencies = [
  "arboard",
  "base64 0.22.1",
+ "cc",
  "chrono",
  "clipboard",
  "cocoa 0.26.1",
