@@ -1,11 +1,13 @@
 use enigo::{Enigo, Keyboard, Settings};
 use std::sync::{Arc, Mutex};
 use once_cell::sync::Lazy;
-use log::{info, warn};
+use log::info;
+#[cfg(target_os = "windows")]
+use log::warn;
 use std::thread;
 use std::time::Duration;
 
-#[cfg(any(target_os = "windows", target_os = "macos"))]
+#[cfg(target_os = "windows")]
 use clipboard::{ClipboardProvider, ClipboardContext};
 
 #[cfg(any(target_os = "windows", target_os = "macos"))]

@@ -26,19 +26,48 @@ export default function useAudioPillState() {
     })
     let unlistenPill: UnlistenFn | undefined
     let unlistenHoldTime: UnlistenFn | undefined
+    let unlistenStart: UnlistenFn | undefined
+    let unlistenStop: UnlistenFn | undefined
+
     appWindow.listen<string>("pill-state", (event) => {
       const newState = event.payload as AudioPillState
       setState(newState)
       setVisible(newState !== "idle")
     }).then((fn: UnlistenFn) => { unlistenPill = fn })
-    
+
     appWindow.listen<number>("hold-time", (event) => {
       setHoldTime(event.payload)
     }).then((fn: UnlistenFn) => { unlistenHoldTime = fn })
-    
+
+    appWindow.listen<string>("start-recording", () => {
+      setVisible(true)
+      setState("listening")
+    }).then((fn: UnlistenFn) => { unlistenStart = fn })
+
+    appWindow.listen<string>("stop-recording", () => {
+      setVisible(true)
+      setState("loading")
+    }).then((fn: UnlistenFn) => { unlistenStop = fn })
+
+    const started = Date.now()
+    const interval = setInterval(() => {
+      appWindow.isVisible().then((isVisible: boolean) => {
+        setVisible(isVisible)
+        if (isVisible) {
+          setState((s) => (s === "idle" ? "listening" : s))
+        }
+      })
+      if (Date.now() - started > 2000) {
+        clearInterval(interval)
+      }
+    }, 150)
+
     return () => {
       if (unlistenPill) unlistenPill()
       if (unlistenHoldTime) unlistenHoldTime()
+      if (unlistenStart) unlistenStart()
+      if (unlistenStop) unlistenStop()
+      clearInterval(interval)
     }
   }, [])
 

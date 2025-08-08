@@ -9,13 +9,16 @@ static CFRunLoopRef g_run_loop = NULL;
 static vwisper_fn_callback_t g_on_down = NULL;
 static vwisper_fn_callback_t g_on_up = NULL;
 static int g_last_fn_state = 0;
+static int g_initialized = 0;
 
 static CGEventRef vwisper_event_callback(
     CGEventTapProxy proxy,
     CGEventType type,
     CGEventRef event,
-    void *userInfo)
+    void * userInfo)
 {
+  (void)proxy;
+  (void)userInfo;
   if (type == kCGEventTapDisabledByTimeout || type == kCGEventTapDisabledByUserInput) {
     if (g_event_tap) {
       CGEventTapEnable(g_event_tap, true);
@@ -23,15 +26,20 @@ static CGEventRef vwisper_event_callback(
     return event;
   }
 
-  if (type == kCGEventFlagsChanged || type == kCGEventKeyDown || type == kCGEventKeyUp) {
+  if (type == kCGEventFlagsChanged) {
     CGEventFlags flags = CGEventGetFlags(event);
 #ifdef kCGEventFlagMaskSecondaryFn
     int fn_down = (flags & kCGEventFlagMaskSecondaryFn) == kCGEventFlagMaskSecondaryFn;
 #else
-    // Fallback for older SDKs; bit value is 0x00800000
     const uint64_t VWISPER_FN_MASK = 0x00800000ULL;
     int fn_down = (flags & VWISPER_FN_MASK) == VWISPER_FN_MASK;
 #endif
+
+    if (!g_initialized) {
+      g_last_fn_state = fn_down;
+      g_initialized = 1;
+      return event;
+    }
 
     if (fn_down != g_last_fn_state) {
       g_last_fn_state = fn_down;
@@ -54,7 +62,7 @@ void vwisper_start_fn_monitor(vwisper_fn_callback_t on_down, vwisper_fn_callback
     return;
   }
 
-  CGEventMask mask = (1ULL << kCGEventFlagsChanged) | (1ULL << kCGEventKeyDown) | (1ULL << kCGEventKeyUp);
+  CGEventMask mask = (1ULL << kCGEventFlagsChanged);
   g_event_tap = CGEventTapCreate(kCGHIDEventTap,
                                  kCGHeadInsertEventTap,
                                  kCGEventTapOptionListenOnly,
@@ -69,6 +77,16 @@ void vwisper_start_fn_monitor(vwisper_fn_callback_t on_down, vwisper_fn_callback
   g_run_loop = CFRunLoopGetCurrent();
   CFRunLoopAddSource(g_run_loop, g_run_loop_source, kCFRunLoopCommonModes);
   CGEventTapEnable(g_event_tap, true);
+
+  CGEventFlags flags = CGEventSourceFlagsState(kCGEventSourceStateCombinedSessionState);
+#ifdef kCGEventFlagMaskSecondaryFn
+  int fn_down = (flags & kCGEventFlagMaskSecondaryFn) == kCGEventFlagMaskSecondaryFn;
+#else
+  const uint64_t VWISPER_FN_MASK = 0x00800000ULL;
+  int fn_down = (flags & VWISPER_FN_MASK) == VWISPER_FN_MASK;
+#endif
+  g_last_fn_state = fn_down;
+  g_initialized = 1;
 
   CFRunLoopRun();
 }
@@ -91,6 +109,5 @@ void vwisper_stop_fn_monitor(void) {
   g_on_down = NULL;
   g_on_up = NULL;
   g_last_fn_state = 0;
+  g_initialized = 0;
 }
-
-

@@ -173,10 +173,15 @@ pub fn start_audio_capture(app_handle: AppHandle) {
 }
 
 pub fn start_recording() -> Result<(), Box<dyn std::error::Error>> {
-    if let Some(processor) = &mut *get_audio_processor().lock().unwrap() {
-        processor.start_recording()?;
+    let processor_arc = get_audio_processor();
+    let mut guard = processor_arc.lock().unwrap();
+    match guard.as_mut() {
+        Some(processor) => {
+            processor.start_recording()?;
+            Ok(())
+        }
+        None => Err("Audio input not initialized".into()),
     }
-    Ok(())
 }
 
 pub fn stop_recording() -> Result<(), Box<dyn std::error::Error>> {
@@ -193,3 +198,7 @@ pub fn is_recording() -> bool {
         false
     }
 } 
+
+pub fn is_ready() -> bool {
+    get_audio_processor().lock().unwrap().is_some()
+}

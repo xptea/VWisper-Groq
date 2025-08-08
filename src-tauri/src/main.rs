@@ -15,8 +15,6 @@ mod transcription;
 mod textinjection;
 mod history;
 mod update;
-#[cfg(target_os = "macos")]
-mod fn_monitor_macos;
 use history::{History, TranscriptionEntry};
 use chrono::Utc;
 use std::sync::OnceLock;
@@ -138,7 +136,7 @@ fn main() {
             #[cfg(target_os = "macos")]
             {
                 let app_handle = app.handle().clone();
-                fn_monitor_macos::start_global_key_monitor(app_handle);
+                platform::macos::start_global_key_monitor(app_handle);
             }
             Ok(())
         })
