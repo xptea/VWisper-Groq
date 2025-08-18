@@ -21,7 +21,7 @@ pub struct UpdateResult {
 }
 
 pub fn get_current_version() -> Result<String, String> {
-    Ok("1.0.4".to_string())
+    Ok("1.0.5".to_string())
 }
 
 fn get_platform_download_url(version: &str) -> String {
