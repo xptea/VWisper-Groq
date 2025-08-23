@@ -1,9 +1,8 @@
-use tauri::{AppHandle, Runtime};
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 use tauri::tray::{TrayIcon, TrayIconBuilder};
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 
-pub fn create_system_tray<R: Runtime>(app: &AppHandle<R>) -> TrayIcon<R> {
+pub fn create_system_tray(app: &AppHandle) -> TrayIcon {
     let dashboard_item = MenuItemBuilder::new("Dashboard")
         .id("dashboard")
         .build(app)

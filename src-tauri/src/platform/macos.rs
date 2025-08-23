@@ -9,8 +9,6 @@ use crate::handle_stop_recording_workflow;
 
 #[cfg(target_os = "macos")]
 use objc::{msg_send, sel, sel_impl};
-#[cfg(target_os = "macos")]
-use cocoa::base::id;
 
 #[link(name = "vwisper_macos_fn_monitor", kind = "static")]
 extern "C" {
@@ -36,14 +34,14 @@ fn get_frontmost_app_name() -> Option<String> {
 }
 
 #[cfg(target_os = "macos")]
+#[allow(deprecated)]
+#[allow(unexpected_cfgs)]
 pub fn set_dock_icon_visible(visible: bool) {
     unsafe {
         let app = cocoa::appkit::NSApp();
         if visible {
-            // NSApplicationActivationPolicyRegular = 0
             let _: () = msg_send![app, setActivationPolicy: 0];
         } else {
-            // NSApplicationActivationPolicyAccessory = 1  
             let _: () = msg_send![app, setActivationPolicy: 1];
         }
     }
