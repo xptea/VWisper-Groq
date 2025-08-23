@@ -7,12 +7,18 @@ import DashboardLayout from "./app/dashboard/layout";
 import DashboardPage from "./app/dashboard/page";
 import SettingsPage from "./app/settings/page";
 import { UpdateChecker } from "./components/UpdateChecker";
+import { MacRestartWarning, useMacRestartWarning } from "./components/MacRestartWarning";
 import { Toaster } from "./components/ui/sonner";
 
 function App() {
+  const { shouldShow, isOpen, closeWarning } = useMacRestartWarning();
+
   return (
     <ThemeProvider defaultTheme="system" storageKey="vwisper-ui-theme">
       <UpdateChecker />
+      {shouldShow && (
+        <MacRestartWarning open={isOpen} onClose={closeWarning} />
+      )}
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AudioPill />} />

@@ -92,6 +92,11 @@ pub fn handle_stop_recording_workflow(app: &tauri::AppHandle, restore_focus: Opt
     Ok(())
 }
 
+#[command]
+fn get_platform() -> Result<String, String> {
+    Ok(std::env::consts::OS.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .on_window_event(|window, event| {
@@ -147,6 +152,7 @@ fn main() {
             settings::get_settings,
             settings::save_settings,
             settings::reset_settings,
+            settings::mark_mac_restart_warning_shown,
             settings::get_settings_path,
             get_transcription_history,
             get_audio_base64,
@@ -154,7 +160,8 @@ fn main() {
             get_text_injector_status,
             test_text_injection,
             check_for_updates,
-            download_and_install_update
+            download_and_install_update,
+            get_platform
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
