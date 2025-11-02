@@ -1,4 +1,4 @@
-# VWisper
+# VWisper - THIS PROJECT IS NOT GOING TO BE UPDATED OR MAINTANED
 ## Installation
 
 ### macOS
