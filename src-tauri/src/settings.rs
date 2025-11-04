@@ -9,6 +9,7 @@ pub struct Settings {
     pub groq_api_key: Option<String>,
     pub save_history: bool,
     pub save_audio: bool,
+    pub mac_restart_warning_shown: bool,
 }
 
 fn settings_path() -> PathBuf {
@@ -22,9 +23,19 @@ fn settings_path() -> PathBuf {
 fn load_settings() -> Settings {
     let path = settings_path();
     if let Ok(data) = fs::read_to_string(path) {
-        serde_json::from_str(&data).unwrap_or(Settings { save_history: true, save_audio: true, ..Default::default() })
+        serde_json::from_str(&data).unwrap_or(Settings { 
+            save_history: true, 
+            save_audio: true, 
+            mac_restart_warning_shown: false,
+            ..Default::default() 
+        })
     } else {
-        Settings { save_history: true, save_audio: true, ..Default::default() }
+        Settings { 
+            save_history: true, 
+            save_audio: true, 
+            mac_restart_warning_shown: false,
+            ..Default::default() 
+        }
     }
 }
 
@@ -53,11 +64,19 @@ pub fn save_settings(groq_api_key: String, save_history: Option<bool>, save_audi
 }
 
 #[command]
+pub fn mark_mac_restart_warning_shown() -> Result<(), String> {
+    let mut settings = load_settings();
+    settings.mac_restart_warning_shown = true;
+    save_settings_to_file(&settings)
+}
+
+#[command]
 pub fn reset_settings() -> Result<(), String> {
     let mut settings = load_settings();
     settings.groq_api_key = None;
     settings.save_history = true;
     settings.save_audio = true;
+    settings.mac_restart_warning_shown = false;
     save_settings_to_file(&settings)
 }
 
