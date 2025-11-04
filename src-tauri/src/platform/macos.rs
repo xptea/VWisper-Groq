@@ -7,6 +7,9 @@ use tauri::{AppHandle, Emitter, Manager};
 use crate::audio;
 use crate::handle_stop_recording_workflow;
 
+#[cfg(target_os = "macos")]
+use objc::{msg_send, sel, sel_impl};
+
 #[link(name = "vwisper_macos_fn_monitor", kind = "static")]
 extern "C" {
     fn vwisper_start_fn_monitor(on_down: extern "C" fn(), on_up: extern "C" fn());
@@ -28,6 +31,38 @@ fn get_frontmost_app_name() -> Option<String> {
     if !output.status.success() { return None; }
     let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if s.is_empty() { None } else { Some(s) }
+}
+
+#[cfg(target_os = "macos")]
+#[allow(deprecated)]
+#[allow(unexpected_cfgs)]
+pub fn set_dock_icon_visible(visible: bool) {
+    unsafe {
+        let app = cocoa::appkit::NSApp();
+        if visible {
+            let _: () = msg_send![app, setActivationPolicy: 0];
+        } else {
+            let _: () = msg_send![app, setActivationPolicy: 1];
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+pub fn set_dock_icon_visible(_visible: bool) {
+    // No-op on non-macOS platforms
+}
+
+pub fn update_dock_icon_for_app(app: &AppHandle) {
+    let main_visible = app.get_webview_window("main")
+        .map(|w| w.is_visible().unwrap_or(false))
+        .unwrap_or(false);
+    
+    let dashboard_visible = app.get_webview_window("dashboard")
+        .map(|w| w.is_visible().unwrap_or(false))
+        .unwrap_or(false);
+    
+    let any_window_visible = main_visible || dashboard_visible;
+    set_dock_icon_visible(any_window_visible);
 }
 
 extern "C" fn on_fn_down_callback() {
@@ -61,6 +96,7 @@ extern "C" fn on_fn_down_callback() {
 
     if let Some(window) = app_handle.get_webview_window("main") {
         let _ = window.show();
+        update_dock_icon_for_app(&app_handle);
     }
     let _ = app_handle.emit_to("main", "pill-state", "listening");
     let _ = app_handle.emit_to("main", "start-recording", "");
@@ -133,6 +169,7 @@ extern "C" fn on_fn_up_callback() {
         let _ = app_handle.emit_to("main", "pill-state", "idle");
         if let Some(window) = app_handle.get_webview_window("main") {
             let _ = window.hide();
+            update_dock_icon_for_app(&app_handle);
         }
         return;
     }
@@ -170,6 +207,7 @@ extern "C" fn on_fn_up_callback() {
         let _ = app_handle_clone.emit_to("main", "pill-state", "idle");
         if let Some(window) = app_handle_clone.get_webview_window("main") {
             let _ = window.hide();
+            update_dock_icon_for_app(&app_handle_clone);
         }
     });
 }

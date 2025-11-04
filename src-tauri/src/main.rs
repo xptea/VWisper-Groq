@@ -96,9 +96,24 @@ fn main() {
     tauri::Builder::default()
         .on_window_event(|window, event| {
             if window.label() == "dashboard" {
-                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                    window.hide().unwrap();
-                    api.prevent_close();
+                match event {
+                    tauri::WindowEvent::CloseRequested { api, .. } => {
+                        window.hide().unwrap();
+                        api.prevent_close();
+                        #[cfg(target_os = "macos")]
+                        {
+                            platform::macos::update_dock_icon_for_app(&window.app_handle());
+                        }
+                    }
+                    tauri::WindowEvent::Focused(focused) => {
+                        if *focused {
+                            #[cfg(target_os = "macos")]
+                            {
+                                platform::macos::update_dock_icon_for_app(&window.app_handle());
+                            }
+                        }
+                    }
+                    _ => {}
                 }
             }
         })
@@ -136,7 +151,9 @@ fn main() {
             #[cfg(target_os = "macos")]
             {
                 let app_handle = app.handle().clone();
-                platform::macos::start_global_key_monitor(app_handle);
+                platform::macos::start_global_key_monitor(app_handle.clone());
+                // Initially hide dock icon since dashboard starts hidden
+                platform::macos::set_dock_icon_visible(false);
             }
             Ok(())
         })
@@ -196,6 +213,10 @@ fn manual_stop_recording(app: tauri::AppHandle) -> Result<(), String> {
         let _ = app_handle_clone.emit_to("main", "pill-state", "idle");
         if let Some(window) = app_handle_clone.get_webview_window("main") {
             let _ = window.hide();
+            #[cfg(target_os = "macos")]
+            {
+                platform::macos::update_dock_icon_for_app(&app_handle_clone);
+            }
         }
     });
     

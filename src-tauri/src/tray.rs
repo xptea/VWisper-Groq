@@ -1,9 +1,8 @@
-use tauri::{AppHandle, Runtime};
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 use tauri::tray::{TrayIcon, TrayIconBuilder};
 use tauri::menu::{MenuBuilder, MenuItemBuilder};
 
-pub fn create_system_tray<R: Runtime>(app: &AppHandle<R>) -> TrayIcon<R> {
+pub fn create_system_tray(app: &AppHandle) -> TrayIcon {
     let dashboard_item = MenuItemBuilder::new("Dashboard")
         .id("dashboard")
         .build(app)
@@ -26,6 +25,10 @@ pub fn create_system_tray<R: Runtime>(app: &AppHandle<R>) -> TrayIcon<R> {
                 if let Some(window) = app.get_webview_window("dashboard") {
                     let _ = window.show();
                     let _ = window.set_focus();
+                    #[cfg(target_os = "macos")]
+                    {
+                        crate::platform::macos::update_dock_icon_for_app(app);
+                    }
                 }
             } else if event.id.0 == "quit" {
                 std::process::exit(0);
